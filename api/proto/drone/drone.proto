@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+package drone;
+
+option go_package = "github.com/uav_tracking/api/proto/drone;dronepb";
+
+import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
+
+enum DroneType {
+  DRONE_TYPE_UNSPECIFIED = 0;
+  DRONE_TYPE_ENEMY = 1;
+  DRONE_TYPE_ALLY = 2;
+  DRONE_TYPE_UNDEFINED = 3;
+}
+
+enum OrbitType {
+  ORBIT_TYPE_UNSPECIFIED = 0;
+  ORBIT_TYPE_CIRCLE = 1;
+  ORBIT_TYPE_STRAIGHT = 2;
+  ORBIT_TYPE_ZIGZAG = 3;
+}
+
+message Vector3D {
+  double latitude = 1;  
+  double longitude = 2;  
+  double altitude = 3;  
+}
+
+message DronePositionUpdate {
+  string drone_id = 1;
+  DroneType type = 2;
+  OrbitType orbit_type = 3;
+  Vector3D position = 4;
+  double speed_m_s = 5;      
+  double heading_deg = 6;    
+  google.protobuf.Timestamp timestamp = 7;
+}
+
+message GetCurrentStateRequest {
+  DroneType type_filter = 1;
+  string search_query = 2;
+}
+
+message GetCurrentStateResponse {
+  int32 total_count = 1;
+  repeated DronePositionUpdate drones = 2;
+}
+
+message GetHistoryRequest {
+  string drone_id = 1;
+  google.protobuf.Timestamp start_time = 2;
+  google.protobuf.Timestamp end_time = 3;
+  int32 max_points = 4; 
+}
+
+message GetHistoryResponse {
+  string drone_id = 1;
+  repeated DronePositionUpdate history = 2;
+}
+
+message SimulationConfigRequest {
+  int32 target_drone_count = 1;
+  int32 update_interval_ms = 2; 
+  bool active = 3;
+}
+
+message SimulationConfigResponse {
+  bool success = 1;
+  int32 active_drones = 2;
+  string message = 3;
+}
+
+service DroneService {
+  // Realtime streaming RPC
+  rpc StreamPositions(GetCurrentStateRequest) returns (stream DronePositionUpdate);
+
+  // Query current state
+  rpc GetCurrentState(GetCurrentStateRequest) returns (GetCurrentStateResponse) {
+    option (google.api.http) = {
+      get: "/v1/drones/current"
+    };
+  }
+
+  // Query get history of drone
+  rpc GetHistory(GetHistoryRequest) returns (GetHistoryResponse) {
+    option (google.api.http) = {
+      get: "/v1/drones/{drone_id}/history"
+    };
+  }
+
+  // Set up config simulator  
+  rpc ControlSimulation(SimulationConfigRequest) returns (SimulationConfigResponse) {
+    option (google.api.http) = {
+      post: "/v1/simulation/control"
+      body: "*"
+    };
+  }
+}

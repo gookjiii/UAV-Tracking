@@ -1,0 +1,65 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: uav-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: uav_tracking
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d uav_tracking"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  nats:
+    image: nats:2.10-alpine
+    container_name: uav-nats
+    command: ["-js", "-m", "8222"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8222/healthz"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: uav-server
+    environment:
+      GRPC_PORT: ":50051"
+      HTTP_PORT: ":8080"
+      NATS_URL: "nats://nats:4222"
+      POSTGRES_DSN: "postgres://postgres:postgrespassword@postgres:5432/uav_tracking?sslmode=disable"
+      TARGET_DRONE_COUNT: 10
+      UPDATE_INTERVAL_MS: 300
+      SSE_INTERVAL_MS: 300
+      MEMORY_HISTORY_POINTS: 500
+      HISTORY_SAMPLE_INTERVAL: "5m"
+      NATS_MAX_BYTES: 134217728
+      BATCH_SIZE: 5000
+      RETENTION_DAYS: 7
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

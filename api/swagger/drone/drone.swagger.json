@@ -1,0 +1,307 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "drone/drone.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "DroneService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/drones/current": {
+      "get": {
+        "summary": "Query current state",
+        "operationId": "DroneService_GetCurrentState",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/droneGetCurrentStateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "typeFilter",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "DRONE_TYPE_UNSPECIFIED",
+              "DRONE_TYPE_ENEMY",
+              "DRONE_TYPE_ALLY",
+              "DRONE_TYPE_UNDEFINED"
+            ],
+            "default": "DRONE_TYPE_UNSPECIFIED"
+          },
+          {
+            "name": "searchQuery",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "DroneService"
+        ]
+      }
+    },
+    "/v1/drones/{droneId}/history": {
+      "get": {
+        "summary": "Query get history of drone",
+        "operationId": "DroneService_GetHistory",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/droneGetHistoryResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "droneId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "startTime",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "endTime",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "maxPoints",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "DroneService"
+        ]
+      }
+    },
+    "/v1/simulation/control": {
+      "post": {
+        "summary": "Set up config simulator",
+        "operationId": "DroneService_ControlSimulation",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/droneSimulationConfigResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/droneSimulationConfigRequest"
+            }
+          }
+        ],
+        "tags": [
+          "DroneService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "droneDronePositionUpdate": {
+      "type": "object",
+      "properties": {
+        "droneId": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/droneDroneType"
+        },
+        "orbitType": {
+          "$ref": "#/definitions/droneOrbitType"
+        },
+        "position": {
+          "$ref": "#/definitions/droneVector3D"
+        },
+        "speedMS": {
+          "type": "number",
+          "format": "double"
+        },
+        "headingDeg": {
+          "type": "number",
+          "format": "double"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "droneDroneType": {
+      "type": "string",
+      "enum": [
+        "DRONE_TYPE_UNSPECIFIED",
+        "DRONE_TYPE_ENEMY",
+        "DRONE_TYPE_ALLY",
+        "DRONE_TYPE_UNDEFINED"
+      ],
+      "default": "DRONE_TYPE_UNSPECIFIED"
+    },
+    "droneGetCurrentStateResponse": {
+      "type": "object",
+      "properties": {
+        "totalCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "drones": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/droneDronePositionUpdate"
+          }
+        }
+      }
+    },
+    "droneGetHistoryResponse": {
+      "type": "object",
+      "properties": {
+        "droneId": {
+          "type": "string"
+        },
+        "history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/droneDronePositionUpdate"
+          }
+        }
+      }
+    },
+    "droneOrbitType": {
+      "type": "string",
+      "enum": [
+        "ORBIT_TYPE_UNSPECIFIED",
+        "ORBIT_TYPE_CIRCLE",
+        "ORBIT_TYPE_STRAIGHT",
+        "ORBIT_TYPE_ZIGZAG"
+      ],
+      "default": "ORBIT_TYPE_UNSPECIFIED"
+    },
+    "droneSimulationConfigRequest": {
+      "type": "object",
+      "properties": {
+        "targetDroneCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "updateIntervalMs": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "active": {
+          "type": "boolean"
+        }
+      }
+    },
+    "droneSimulationConfigResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "activeDrones": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "droneVector3D": {
+      "type": "object",
+      "properties": {
+        "latitude": {
+          "type": "number",
+          "format": "double"
+        },
+        "longitude": {
+          "type": "number",
+          "format": "double"
+        },
+        "altitude": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  }
+}
